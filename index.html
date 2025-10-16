@@ -1,7 +1,6 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Telegram Mini App Debug</title>
@@ -23,8 +22,11 @@
   <h2>initDataUnsafe (all user info)</h2>
   <pre id="init-data-unsafe"></pre>
 
+  <!-- Подключаем официальный скрипт Telegram Web Apps -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
   <script>
-    // Проверка, что WebApp загружен через Telegram
+    // Проверка наличия SDK
     if (!window.Telegram || !window.Telegram.WebApp) {
       document.body.innerHTML = "<h1>Откройте это через Telegram!</h1>";
     } else {
@@ -39,10 +41,10 @@
       // initData (подписанные данные)
       document.getElementById("init-data").textContent = tg.initData || "Нет initData";
 
-      // initDataUnsafe (неподписанные данные, можно увидеть пользователя)
+      // initDataUnsafe (неподписанные данные, включая пользователя)
       document.getElementById("init-data-unsafe").textContent = JSON.stringify(tg.initDataUnsafe, null, 2);
 
-      // Лог в консоль
+      // Лог в консоль для отладки
       console.log("Telegram.WebApp:", tg);
       console.log("initData:", tg.initData);
       console.log("initDataUnsafe:", tg.initDataUnsafe);
