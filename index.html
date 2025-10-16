@@ -1,24 +1,56 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Mini App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram WebApp Debug</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #f4f4f4; }
+    pre { background: #fff; padding: 15px; border-radius: 8px; overflow-x: auto; }
+    h1 { font-size: 18px; }
+  </style>
 </head>
 <body>
-<h1>Mini App</h1>
-<pre id="data"></pre>
-<button id="send">Отправить данные в Telegram</button>
+  <h1>Telegram WebApp Data</h1>
+  <pre id="data">Загрузка данных...</pre>
 
-<script>
-const tg = window.Telegram.WebApp;
+  <script>
+    function prettyPrint(obj) {
+      return JSON.stringify(obj, null, 2);
+    }
 
-// Выводим все данные от Telegram WebApp
-document.getElementById("data").textContent = JSON.stringify(tg.initData, null, 2);
+    function showData() {
+      if (!window.Telegram || !window.Telegram.WebApp) {
+        document.getElementById('data').textContent = "Ошибка: откройте WebApp внутри Telegram";
+        return;
+      }
 
-document.getElementById("send").addEventListener("click", () => {
-    // Отправка данных обратно в бота
-    tg.sendData(JSON.stringify(tg.initData));
-});
-</script>
+      const webApp = window.Telegram.WebApp;
+
+      const data = {
+        initData: webApp.initData,
+        initDataUnsafe: webApp.initDataUnsafe,
+        themeParams: webApp.themeParams,
+        isExpanded: webApp.isExpanded,
+        viewportHeight: webApp.viewportHeight,
+        viewportStableHeight: webApp.viewportStableHeight,
+        colorScheme: webApp.colorScheme,
+        platform: webApp.platform,
+        MainButton: {
+          text: webApp.MainButton.text,
+          color: webApp.MainButton.color,
+          isVisible: webApp.MainButton.isVisible,
+          isActive: webApp.MainButton.isActive,
+        }
+      };
+
+      document.getElementById('data').textContent = prettyPrint(data);
+
+      // Логируем в консоль для отладки
+      console.log("Telegram WebApp full data:", data);
+    }
+
+    document.addEventListener("DOMContentLoaded", showData);
+  </script>
 </body>
 </html>
