@@ -1,61 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Telegram WebApp Debug</title>
-  <style>
-    body { font-family: monospace; padding: 20px; background: #f5f5f5; }
-    pre { background: #fff; padding: 10px; border: 1px solid #ccc; overflow: auto; }
-  </style>
+<meta charset="UTF-8">
+<title>Telegram Mini App</title>
 </head>
 <body>
-  <h1>Telegram WebApp Data</h1>
-  <div id="status">Ожидание Telegram WebApp...</div>
-  <pre id="data"></pre>
+<h1>Telegram Mini App</h1>
+<pre id="data"></pre>
 
-  <script>
-    function waitForWebApp(timeout = 5000) {
-      return new Promise((resolve, reject) => {
-        const start = Date.now();
-        const check = () => {
-          if (window.Telegram && window.Telegram.WebApp) {
-            resolve(window.Telegram.WebApp);
-          } else if (Date.now() - start > timeout) {
-            reject("WebApp API не найден. Убедитесь, что открываете через кнопку бота.");
-          } else {
-            requestAnimationFrame(check);
-          }
-        };
-        check();
-      });
-    }
-
-    waitForWebApp()
-      .then(webApp => {
-        document.getElementById('status').textContent = "WebApp готов!";
-        // Логируем объект в консоль
-        console.log("Telegram WebApp object:", webApp);
-
-        // Выводим ВСЕ данные на страницу
-        const allData = {
-          initData: webApp.initData,
-          initDataUnsafe: webApp.initDataUnsafe,
-          colorScheme: webApp.colorScheme,
-          isExpanded: webApp.isExpanded,
-          viewportHeight: webApp.viewportHeight,
-          viewportStableHeight: webApp.viewportStableHeight,
-          MainButton: {
-            text: webApp.MainButton.text,
-            isVisible: webApp.MainButton.isVisible,
-            isActive: webApp.MainButton.isActive
-          }
-        };
-
-        document.getElementById('data').textContent = JSON.stringify(allData, null, 2);
-      })
-      .catch(err => {
-        document.getElementById('status').textContent = "Ошибка: " + err;
-      });
-  </script>
+<script>
+  if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      document.getElementById('data').innerText = JSON.stringify(window.Telegram.WebApp, null, 2);
+  } else {
+      document.getElementById('data').innerText = "window.Telegram.WebApp undefined. Откройте через Telegram!";
+  }
+</script>
 </body>
 </html>
