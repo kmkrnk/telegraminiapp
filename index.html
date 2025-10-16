@@ -16,20 +16,30 @@
     <script>
         const tg = window.Telegram.WebApp;
 
-        // Показываем кнопку "Закрыть"
+        // Разворачиваем окно
         tg.expand();
 
-        // Выводим все данные
+        // Получаем все данные, которые Telegram передал
         const allData = {
             initData: tg.initData,
             initDataUnsafe: tg.initDataUnsafe,
             themeParams: tg.themeParams
         };
 
+        // Выводим на страницу
         document.getElementById("data").textContent = JSON.stringify(allData, null, 2);
 
-        // Лог для консоли
+        // Лог в консоль
         console.log("Данные Telegram:", allData);
+
+        // Отправляем обратно боту (опционально)
+        tg.onEvent("mainButtonClicked", () => {
+            tg.sendData(JSON.stringify(allData));
+        });
+
+        // Показываем кнопку "Отправить данные обратно боту"
+        tg.MainButton.setText("Отправить данные боту");
+        tg.MainButton.show();
     </script>
 </body>
 </html>
