@@ -3,18 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <title>Telegram Mini App</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 <h1>Telegram Mini App</h1>
-<pre id="data"></pre>
+<pre id="data">Загрузка данных...</pre>
 
 <script>
-  if (window.Telegram && window.Telegram.WebApp) {
-      window.Telegram.WebApp.ready();
-      document.getElementById('data').innerText = JSON.stringify(window.Telegram.WebApp, null, 2);
-  } else {
-      document.getElementById('data').innerText = "window.Telegram.WebApp undefined. Откройте через Telegram!";
-  }
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+
+  // Вывод всех данных в <pre>
+  document.getElementById('data').innerText = JSON.stringify(tg, null, 2);
+
+  // Логирование в консоль
+  console.log("Telegram WebApp object:", tg);
 </script>
 </body>
 </html>
