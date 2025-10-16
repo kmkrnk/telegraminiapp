@@ -1,46 +1,42 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Telegram Mini App</title>
+    <meta charset="UTF-8">
+    <title>Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        pre { background: #f0f0f0; padding: 10px; }
+    </style>
 </head>
 <body>
-<h1>Все данные Telegram</h1>
-<pre id="output">Загрузка данных...</pre>
-<button id="sendBtn">Отправить данные обратно в бот</button>
+    <h1>Данные Telegram WebApp</h1>
+    <pre id="output">Загрузка...</pre>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script>
-const tg = window.Telegram.WebApp;
+    <script>
+        const tg = window.Telegram.WebApp;
 
-if (!tg) {
-    document.getElementById('output').textContent = "Откройте миниапп внутри Telegram!";
-} else {
-    tg.ready();
+        // Проверяем, открыт ли через Telegram
+        if (!tg) {
+            document.getElementById('output').textContent = "Откройте WebApp через Telegram!";
+        } else {
+            // Включаем кнопку "назад" или "готово"
+            tg.expand();
 
-    // Распарсим initDataUnsafe (это безопасно, Telegram его сам подписал)
-    const info = tg.initDataUnsafe || {};
-    
-    // Можно отдельно user, chat, peer, и другие поля
-    const fullInfo = {
-        user: info.user || null,
-        receiver: info.receiver || null,
-        chat: info.chat || null,
-        queryId: info.query_id || null,
-        authDate: info.auth_date || null,
-        platform: tg.platform,
-        version: tg.version,
-        themeParams: tg.themeParams
-    };
+            const info = {
+                initData: tg.initData,
+                initDataUnsafe: tg.initDataUnsafe,
+                user: tg.initDataUnsafe?.user,
+                chat: tg.initDataUnsafe?.chat,
+                themeParams: tg.themeParams,
+            };
 
-    // Выводим красиво
-    document.getElementById('output').textContent = JSON.stringify(fullInfo, null, 4);
+            // Выводим все данные на экран
+            document.getElementById('output').textContent = JSON.stringify(info, null, 2);
 
-    // Кнопка отправки обратно в бот
-    document.getElementById('sendBtn').addEventListener('click', () => {
-        tg.sendData(JSON.stringify(fullInfo));
-    });
-}
-</script>
+            // Отправляем данные обратно боту
+            tg.sendData(JSON.stringify(info));
+        }
+    </script>
 </body>
 </html>
