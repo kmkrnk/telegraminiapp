@@ -1,0 +1,21 @@
+body {
+  font-family: sans-serif;
+  background-color: var(--tg-theme-bg-color, #f0f0f0);
+  color: var(--tg-theme-text-color, #222);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+.container {
+  text-align: center;
+}
+button {
+  background-color: var(--tg-theme-button-color, #2a9);
+  color: var(--tg-theme-button-text-color, #fff);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 16px;
+}
