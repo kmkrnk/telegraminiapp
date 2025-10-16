@@ -2,22 +2,43 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Telegram Mini App</title>
+<title>Telegram Mini App Full Data</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  body { font-family: monospace; padding: 20px; white-space: pre-wrap; }
+</style>
 </head>
 <body>
-<h1>Telegram Mini App</h1>
-<pre id="data">Загрузка данных...</pre>
+<h1>Все данные Telegram WebApp</h1>
+<div id="data">Загрузка...</div>
 
 <script>
   const tg = window.Telegram.WebApp;
   tg.ready();
 
-  // Вывод всех данных в <pre>
-  document.getElementById('data').innerText = JSON.stringify(tg, null, 2);
+  function dumpObject(obj, depth = 0) {
+    const indent = '  '.repeat(depth);
+    let output = '';
+    for (const key in obj) {
+      try {
+        const val = obj[key];
+        if (val && typeof val === 'object') {
+          output += `${indent}${key}: {\n${dumpObject(val, depth + 1)}${indent}}\n`;
+        } else if (typeof val === 'function') {
+          output += `${indent}${key}: [Function]\n`;
+        } else {
+          output += `${indent}${key}: ${val}\n`;
+        }
+      } catch (e) {
+        output += `${indent}${key}: [Cannot read]\n`;
+      }
+    }
+    return output;
+  }
 
-  // Логирование в консоль
-  console.log("Telegram WebApp object:", tg);
+  document.getElementById('data').innerText = dumpObject(tg);
+
+  console.log("Telegram WebApp full object:", tg);
 </script>
 </body>
 </html>
