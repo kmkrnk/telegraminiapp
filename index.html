@@ -1,54 +1,34 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Telegram Mini App Debug</title>
-  <style>
-    body { font-family: monospace; padding: 20px; background: #f0f0f0; }
-    pre { background: #fff; padding: 10px; border-radius: 5px; overflow-x: auto; }
-    h2 { margin-top: 20px; }
-  </style>
+  <title>Mini App Debug</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-  <h1>Telegram Mini App Debug</h1>
-
-  <h2>Telegram.WebApp Object</h2>
-  <pre id="webapp-object"></pre>
-
-  <h2>initData (signed)</h2>
-  <pre id="init-data"></pre>
-
-  <h2>initDataUnsafe (all user info)</h2>
-  <pre id="init-data-unsafe"></pre>
-
-  <!-- Подключаем официальный скрипт Telegram Web Apps -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <h1>Telegram Web App Data</h1>
+  <pre id="allData"></pre>
 
   <script>
-    // Проверка наличия SDK
-    if (!window.Telegram || !window.Telegram.WebApp) {
-      document.body.innerHTML = "<h1>Откройте это через Telegram!</h1>";
-    } else {
-      const tg = window.Telegram.WebApp;
+    const tg = window.Telegram.WebApp;
 
-      // Сообщаем Telegram, что WebApp готов
-      tg.ready();
+    // Инициализация
+    tg.expand(); // Разворачиваем вебапп на весь экран
 
-      // Выводим объект WebApp
-      document.getElementById("webapp-object").textContent = JSON.stringify(tg, Object.getOwnPropertyNames(tg), 2);
+    // Выводим все данные
+    const allInfo = {
+      initData: tg.initData,          // Полная закодированная строка
+      initDataUnsafe: tg.initDataUnsafe, // Раскодированная информация о пользователе и чате
+      themeParams: tg.themeParams,
+      version: tg.version,
+      isExpanded: tg.isExpanded,
+      viewportHeight: tg.viewportHeight
+    };
 
-      // initData (подписанные данные)
-      document.getElementById("init-data").textContent = tg.initData || "Нет initData";
+    document.getElementById('allData').textContent = JSON.stringify(allInfo, null, 2);
 
-      // initDataUnsafe (неподписанные данные, включая пользователя)
-      document.getElementById("init-data-unsafe").textContent = JSON.stringify(tg.initDataUnsafe, null, 2);
-
-      // Лог в консоль для отладки
-      console.log("Telegram.WebApp:", tg);
-      console.log("initData:", tg.initData);
-      console.log("initDataUnsafe:", tg.initDataUnsafe);
-    }
+    // При желании, можно отправить данные обратно боту
+    // tg.sendData(JSON.stringify(allInfo));
   </script>
 </body>
 </html>
