@@ -1,34 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Mini App Debug</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta charset="UTF-8">
+    <title>Telegram Mini App</title>
 </head>
 <body>
-  <h1>Telegram Web App Data</h1>
-  <pre id="allData"></pre>
+    <h1>Все данные от Telegram</h1>
+    <pre id="output">Загрузка данных...</pre>
+    <button id="sendBtn">Отправить данные обратно в бот</button>
 
-  <script>
-    const tg = window.Telegram.WebApp;
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        const tg = window.Telegram.WebApp;
 
-    // Инициализация
-    tg.expand(); // Разворачиваем вебапп на весь экран
+        // Проверяем, что мы внутри Telegram
+        if (!tg) {
+            document.getElementById('output').textContent = "Откройте миниапп внутри Telegram!";
+        } else {
+            tg.ready();
 
-    // Выводим все данные
-    const allInfo = {
-      initData: tg.initData,          // Полная закодированная строка
-      initDataUnsafe: tg.initDataUnsafe, // Раскодированная информация о пользователе и чате
-      themeParams: tg.themeParams,
-      version: tg.version,
-      isExpanded: tg.isExpanded,
-      viewportHeight: tg.viewportHeight
-    };
+            // Получаем все данные, которые Telegram передал
+            const info = {
+                initData: tg.initData,
+                initDataUnsafe: tg.initDataUnsafe,
+                version: tg.version,
+                platform: tg.platform,
+                themeParams: tg.themeParams
+            };
 
-    document.getElementById('allData').textContent = JSON.stringify(allInfo, null, 2);
+            // Выводим их на страницу
+            document.getElementById('output').textContent = JSON.stringify(info, null, 4);
 
-    // При желании, можно отправить данные обратно боту
-    // tg.sendData(JSON.stringify(allInfo));
-  </script>
+            // Отправка данных обратно в бот
+            document.getElementById('sendBtn').addEventListener('click', () => {
+                tg.sendData(JSON.stringify(info));
+            });
+        }
+    </script>
 </body>
 </html>
