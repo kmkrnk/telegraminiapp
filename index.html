@@ -1,42 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Telegram Mini App</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: monospace; padding: 20px; }
-        pre { background: #f0f0f0; padding: 10px; }
+        body { font-family: monospace; padding: 20px; background: #f0f0f0; }
+        pre { background: #fff; padding: 10px; border-radius: 5px; overflow-x: auto; }
     </style>
 </head>
 <body>
-    <h1>Данные Telegram WebApp</h1>
-    <pre id="output">Загрузка...</pre>
+    <h1>Все данные Telegram WebApp</h1>
+    <pre id="data">Загрузка...</pre>
 
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
         const tg = window.Telegram.WebApp;
 
-        // Проверяем, открыт ли через Telegram
-        if (!tg) {
-            document.getElementById('output').textContent = "Откройте WebApp через Telegram!";
-        } else {
-            // Включаем кнопку "назад" или "готово"
-            tg.expand();
+        // Показываем кнопку "Закрыть"
+        tg.expand();
 
-            const info = {
-                initData: tg.initData,
-                initDataUnsafe: tg.initDataUnsafe,
-                user: tg.initDataUnsafe?.user,
-                chat: tg.initDataUnsafe?.chat,
-                themeParams: tg.themeParams,
-            };
+        // Выводим все данные
+        const allData = {
+            initData: tg.initData,
+            initDataUnsafe: tg.initDataUnsafe,
+            themeParams: tg.themeParams
+        };
 
-            // Выводим все данные на экран
-            document.getElementById('output').textContent = JSON.stringify(info, null, 2);
+        document.getElementById("data").textContent = JSON.stringify(allData, null, 2);
 
-            // Отправляем данные обратно боту
-            tg.sendData(JSON.stringify(info));
-        }
+        // Лог для консоли
+        console.log("Данные Telegram:", allData);
     </script>
 </body>
 </html>
