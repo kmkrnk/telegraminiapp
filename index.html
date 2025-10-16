@@ -1,44 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Telegram Mini App Full Data</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-  body { font-family: monospace; padding: 20px; white-space: pre-wrap; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram Mini App Debug</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #f0f0f0; }
+    pre { background: #fff; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    h2 { margin-top: 20px; }
+  </style>
 </head>
 <body>
-<h1>Все данные Telegram WebApp</h1>
-<div id="data">Загрузка...</div>
+  <h1>Telegram Mini App Debug</h1>
 
-<script>
-  const tg = window.Telegram.WebApp;
-  tg.ready();
+  <h2>Telegram.WebApp Object</h2>
+  <pre id="webapp-object"></pre>
 
-  function dumpObject(obj, depth = 0) {
-    const indent = '  '.repeat(depth);
-    let output = '';
-    for (const key in obj) {
-      try {
-        const val = obj[key];
-        if (val && typeof val === 'object') {
-          output += `${indent}${key}: {\n${dumpObject(val, depth + 1)}${indent}}\n`;
-        } else if (typeof val === 'function') {
-          output += `${indent}${key}: [Function]\n`;
-        } else {
-          output += `${indent}${key}: ${val}\n`;
-        }
-      } catch (e) {
-        output += `${indent}${key}: [Cannot read]\n`;
-      }
+  <h2>initData (signed)</h2>
+  <pre id="init-data"></pre>
+
+  <h2>initDataUnsafe (all user info)</h2>
+  <pre id="init-data-unsafe"></pre>
+
+  <script>
+    // Проверка, что WebApp загружен через Telegram
+    if (!window.Telegram || !window.Telegram.WebApp) {
+      document.body.innerHTML = "<h1>Откройте это через Telegram!</h1>";
+    } else {
+      const tg = window.Telegram.WebApp;
+
+      // Сообщаем Telegram, что WebApp готов
+      tg.ready();
+
+      // Выводим объект WebApp
+      document.getElementById("webapp-object").textContent = JSON.stringify(tg, Object.getOwnPropertyNames(tg), 2);
+
+      // initData (подписанные данные)
+      document.getElementById("init-data").textContent = tg.initData || "Нет initData";
+
+      // initDataUnsafe (неподписанные данные, можно увидеть пользователя)
+      document.getElementById("init-data-unsafe").textContent = JSON.stringify(tg.initDataUnsafe, null, 2);
+
+      // Лог в консоль
+      console.log("Telegram.WebApp:", tg);
+      console.log("initData:", tg.initData);
+      console.log("initDataUnsafe:", tg.initDataUnsafe);
     }
-    return output;
-  }
-
-  document.getElementById('data').innerText = dumpObject(tg);
-
-  console.log("Telegram WebApp full object:", tg);
-</script>
+  </script>
 </body>
 </html>
