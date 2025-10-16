@@ -1,56 +1,61 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Telegram WebApp Debug</title>
   <style>
-    body { font-family: monospace; padding: 20px; background: #f4f4f4; }
-    pre { background: #fff; padding: 15px; border-radius: 8px; overflow-x: auto; }
-    h1 { font-size: 18px; }
+    body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+    pre { background: #fff; padding: 10px; border: 1px solid #ccc; overflow: auto; }
   </style>
 </head>
 <body>
   <h1>Telegram WebApp Data</h1>
-  <pre id="data">Загрузка данных...</pre>
+  <div id="status">Ожидание Telegram WebApp...</div>
+  <pre id="data"></pre>
 
   <script>
-    function prettyPrint(obj) {
-      return JSON.stringify(obj, null, 2);
+    function waitForWebApp(timeout = 5000) {
+      return new Promise((resolve, reject) => {
+        const start = Date.now();
+        const check = () => {
+          if (window.Telegram && window.Telegram.WebApp) {
+            resolve(window.Telegram.WebApp);
+          } else if (Date.now() - start > timeout) {
+            reject("WebApp API не найден. Убедитесь, что открываете через кнопку бота.");
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        check();
+      });
     }
 
-    function showData() {
-      if (!window.Telegram || !window.Telegram.WebApp) {
-        document.getElementById('data').textContent = "Ошибка: откройте WebApp внутри Telegram";
-        return;
-      }
+    waitForWebApp()
+      .then(webApp => {
+        document.getElementById('status').textContent = "WebApp готов!";
+        // Логируем объект в консоль
+        console.log("Telegram WebApp object:", webApp);
 
-      const webApp = window.Telegram.WebApp;
+        // Выводим ВСЕ данные на страницу
+        const allData = {
+          initData: webApp.initData,
+          initDataUnsafe: webApp.initDataUnsafe,
+          colorScheme: webApp.colorScheme,
+          isExpanded: webApp.isExpanded,
+          viewportHeight: webApp.viewportHeight,
+          viewportStableHeight: webApp.viewportStableHeight,
+          MainButton: {
+            text: webApp.MainButton.text,
+            isVisible: webApp.MainButton.isVisible,
+            isActive: webApp.MainButton.isActive
+          }
+        };
 
-      const data = {
-        initData: webApp.initData,
-        initDataUnsafe: webApp.initDataUnsafe,
-        themeParams: webApp.themeParams,
-        isExpanded: webApp.isExpanded,
-        viewportHeight: webApp.viewportHeight,
-        viewportStableHeight: webApp.viewportStableHeight,
-        colorScheme: webApp.colorScheme,
-        platform: webApp.platform,
-        MainButton: {
-          text: webApp.MainButton.text,
-          color: webApp.MainButton.color,
-          isVisible: webApp.MainButton.isVisible,
-          isActive: webApp.MainButton.isActive,
-        }
-      };
-
-      document.getElementById('data').textContent = prettyPrint(data);
-
-      // Логируем в консоль для отладки
-      console.log("Telegram WebApp full data:", data);
-    }
-
-    document.addEventListener("DOMContentLoaded", showData);
+        document.getElementById('data').textContent = JSON.stringify(allData, null, 2);
+      })
+      .catch(err => {
+        document.getElementById('status').textContent = "Ошибка: " + err;
+      });
   </script>
 </body>
 </html>
