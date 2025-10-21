@@ -1,45 +1,42 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Telegram Mini App</title>
-    <style>
-        body { font-family: monospace; padding: 20px; background: #f0f0f0; }
-        pre { background: #fff; padding: 10px; border-radius: 5px; overflow-x: auto; }
-    </style>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <h1>Все данные Telegram WebApp</h1>
-    <pre id="data">Загрузка...</pre>
+    <main class="app">
+        <header class="app__header">
+            <div class="app__user">
+                <div class="app__avatar" id="avatar" aria-hidden="true">TG</div>
+                <div class="app__user-info">
+                    <h1 class="app__title" id="title">Привет!</h1>
+                    <p class="app__subtitle" id="subtitle">Подключаемся к Telegram…</p>
+                </div>
+            </div>
+            <button class="app__close" type="button" id="close" aria-label="Закрыть мини-приложение">×</button>
+        </header>
 
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script>
-        const tg = window.Telegram.WebApp;
+        <section class="app__section">
+            <h2 class="section-title">Выберите напиток</h2>
+            <ul class="product-list" id="product-list" role="list"></ul>
+        </section>
 
-        // Разворачиваем окно
-        tg.expand();
+        <section class="app__section">
+            <h2 class="section-title">Ваш заказ</h2>
+            <div class="empty" id="empty-cart">Добавьте напиток, чтобы оформить заказ.</div>
+            <ul class="cart-list" id="cart-list" role="list" hidden></ul>
+            <div class="cart-summary" id="summary" hidden>
+                <span>Итого</span>
+                <strong id="total">0 ₽</strong>
+            </div>
+            <button class="secondary-button" type="button" id="clear" hidden>Очистить заказ</button>
+        </section>
+    </main>
 
-        // Получаем все данные, которые Telegram передал
-        const allData = {
-            initData: tg.initData,
-            initDataUnsafe: tg.initDataUnsafe,
-            themeParams: tg.themeParams
-        };
-
-        // Выводим на страницу
-        document.getElementById("data").textContent = JSON.stringify(allData, null, 2);
-
-        // Лог в консоль
-        console.log("Данные Telegram:", allData);
-
-        // Отправляем обратно боту (опционально)
-        tg.onEvent("mainButtonClicked", () => {
-            tg.sendData(JSON.stringify(allData));
-        });
-
-        // Показываем кнопку "Отправить данные обратно боту"
-        tg.MainButton.setText("Отправить данные боту");
-        tg.MainButton.show();
-    </script>
+    <script src="script.js" defer></script>
 </body>
 </html>
