@@ -139,6 +139,170 @@ h1 {
   word-break: break-word;
 }
 
+.status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(19, 2, 41, 0.55);
+  border: 1px solid rgba(255, 230, 251, 0.18);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(249, 249, 255, 0.4);
+  box-shadow: 0 0 0 4px rgba(249, 249, 255, 0.08);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.status-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.status-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.status-meta {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(249, 249, 255, 0.6);
+}
+
+.status-log-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.status-label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(249, 249, 255, 0.6);
+}
+
+.status-log {
+  margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 230, 251, 0.18);
+  background: rgba(13, 2, 41, 0.55);
+  color: var(--text-main);
+  font-family: "Fira Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.status-item[data-state="pending"] .status-indicator {
+  background: #fbbf24;
+  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.25);
+}
+
+.status-item[data-state="success"] .status-indicator {
+  background: #34d399;
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.2);
+}
+
+.status-item[data-state="retrying"] .status-indicator {
+  background: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.25);
+}
+
+.status-item[data-state="error"] .status-indicator {
+  background: #f87171;
+  box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.2);
+}
+
+.status-note {
+  font-size: 13px;
+  color: rgba(249, 249, 255, 0.72);
+  line-height: 1.55;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px dashed rgba(255, 230, 251, 0.28);
+  background: rgba(19, 2, 41, 0.45);
+}
+
+.status-note strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(249, 249, 255, 0.75);
+}
+
+.status-note code {
+  font-family: "Fira Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+  color: var(--luna-cream);
+  background: rgba(127, 90, 240, 0.22);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.ghost {
+  align-self: flex-start;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px dashed rgba(127, 90, 240, 0.55);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.ghost:hover {
+  color: var(--luna-cream);
+  border-color: rgba(127, 90, 240, 0.85);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(127, 90, 240, 0.25);
+}
+
+.ghost:active {
+  transform: translateY(0);
+}
+
+.ghost:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .raw-section {
   margin-top: 22px;
 }
@@ -317,5 +481,22 @@ h1 {
   .raw-content {
     max-height: 220px;
     font-size: 12px;
+  }
+
+  .status-item {
+    padding: 16px;
+  }
+
+  .status-text {
+    font-size: 13px;
+  }
+
+  .status-log {
+    font-size: 11px;
+  }
+
+  .status-note {
+    font-size: 12px;
+    padding: 14px 16px;
   }
 }

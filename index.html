@@ -38,6 +38,39 @@
           <button id="start-fallback" class="primary hidden" type="button">Start quiz</button>
         </section>
 
+        <section id="diagnostics" class="card">
+          <h2>Интеграции и отладка</h2>
+          <div class="status-list">
+            <div id="salebot-status" class="status-item" data-state="idle">
+              <div class="status-header">
+                <span class="status-indicator" aria-hidden="true"></span>
+                <div class="status-title-wrap">
+                  <p class="status-title">Salebot callback</p>
+                  <p id="salebot-status-message" class="status-text">
+                    Ожидаем запуск мини-аппа…
+                  </p>
+                </div>
+              </div>
+              <p id="salebot-status-details" class="status-meta hidden"></p>
+              <div class="status-log-wrap">
+                <span class="status-label">Последний payload</span>
+                <pre id="salebot-payload" class="status-log">—</pre>
+              </div>
+              <button id="copy-salebot-payload" class="ghost" type="button" disabled>
+                Скопировать payload
+              </button>
+            </div>
+            <div class="status-note">
+              <strong>Как проверить ответ:</strong>
+              <p>
+                Откройте DevTools → вкладка <strong>Network</strong> → фильтр по
+                <code>tg_callback</code>, чтобы увидеть, дошёл ли ответ Salebot.
+                Здесь мы показываем статус отправки и данные последнего запроса.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section id="quiz" class="card hidden">
           <p id="question" class="question"></p>
           <div id="options" class="options"></div>

@@ -12,6 +12,11 @@ const initDataUnsafeEl = document.getElementById("init-data-unsafe");
 const hintEl = document.getElementById("main-button-hint");
 const fallbackStartButton = document.getElementById("start-fallback");
 const titleEl = document.getElementById("title");
+const salebotStatusEl = document.getElementById("salebot-status");
+const salebotStatusMessageEl = document.getElementById("salebot-status-message");
+const salebotStatusDetailsEl = document.getElementById("salebot-status-details");
+const salebotPayloadEl = document.getElementById("salebot-payload");
+const copySalebotPayloadButton = document.getElementById("copy-salebot-payload");
 
 const questions = [
   {
@@ -57,6 +62,79 @@ let quizStarted = false;
 let initMessageSent = false;
 let salebotNotified = false;
 let salebotRequestInFlight = false;
+
+function formatTimestamp(date = new Date()) {
+  return date.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function describeError(error) {
+  if (!error) {
+    return "Неизвестная ошибка";
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return JSON.stringify(error);
+}
+
+function limitDetail(detail, limit = 420) {
+  if (!detail) {
+    return "";
+  }
+
+  const normalized = String(detail);
+  if (normalized.length <= limit) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, limit - 1)}…`;
+}
+
+function updateSalebotStatus(state, message, detail) {
+  if (salebotStatusEl) {
+    salebotStatusEl.dataset.state = state;
+  }
+
+  if (salebotStatusMessageEl && message) {
+    salebotStatusMessageEl.textContent = message;
+  }
+
+  if (!salebotStatusDetailsEl) {
+    return;
+  }
+
+  if (detail) {
+    salebotStatusDetailsEl.textContent = detail;
+    salebotStatusDetailsEl.classList.remove("hidden");
+  } else {
+    salebotStatusDetailsEl.textContent = "";
+    salebotStatusDetailsEl.classList.add("hidden");
+  }
+}
+
+function updateSalebotPayload(payload) {
+  if (!salebotPayloadEl) {
+    return;
+  }
+
+  const hasPayload = Boolean(payload && payload.trim());
+  const value = hasPayload ? payload : "—";
+  salebotPayloadEl.textContent = value;
+
+  if (copySalebotPayloadButton) {
+    copySalebotPayloadButton.disabled = !hasPayload;
+  }
+}
 
 function parseUserFromInitDataString() {
   if (!tg?.initData) {
@@ -118,6 +196,8 @@ const TARGET_CHAT_ID = "5685844627";
 const BOT_ENDPOINT = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
 const SALEBOT_ENDPOINT =
   "https://chatter.salebot.pro/api/c21b4a58a0116a1b4402666bdaaa54af/tg_callback";
+const MAX_SALEBOT_ATTEMPTS = 6;
+const SALEBOT_RETRY_DELAY_MS = 600;
 
 const handleMainButtonClick = () => startQuiz();
 
@@ -260,7 +340,7 @@ async function sendInitDataToBot() {
 }
 
 function scheduleSalebotRetry(nextAttempt) {
-  setTimeout(() => notifySalebotAboutOpen(nextAttempt), 600);
+  setTimeout(() => notifySalebotAboutOpen(nextAttempt), SALEBOT_RETRY_DELAY_MS);
 }
 
 async function notifySalebotAboutOpen(attempt = 0) {
@@ -268,17 +348,25 @@ async function notifySalebotAboutOpen(attempt = 0) {
     return;
   }
 
+  const attemptNumber = attempt + 1;
+  const hasMoreAttempts = attemptNumber < MAX_SALEBOT_ATTEMPTS;
+  const delaySeconds = (SALEBOT_RETRY_DELAY_MS / 1000).toFixed(1);
+
   const userId = getTelegramUserId();
   if (!userId) {
-    if (attempt < 5) {
+    updateSalebotStatus(
+      hasMoreAttempts ? "retrying" : "error",
+      "Ожидаем user_id от Telegram…",
+      hasMoreAttempts
+        ? `Следующая проверка через ${delaySeconds} с (попытка ${attemptNumber + 1} из ${MAX_SALEBOT_ATTEMPTS}).`
+        : "Telegram не передал user_id. Убедитесь, что мини-апп открыт из чата бота."
+    );
+
+    if (hasMoreAttempts) {
       scheduleSalebotRetry(attempt + 1);
-    } else {
-      console.warn("Salebot notification skipped: user ID unavailable.");
     }
     return;
   }
-
-  salebotRequestInFlight = true;
 
   const payload = new URLSearchParams({
     user_id: String(userId),
@@ -286,6 +374,15 @@ async function notifySalebotAboutOpen(attempt = 0) {
     group_id: "jwmqnwjqmw_bot",
   });
   const payloadString = payload.toString();
+
+  updateSalebotPayload(payloadString);
+  updateSalebotStatus(
+    "pending",
+    "Отправляем запрос в Salebot…",
+    `Попытка ${attemptNumber} из ${MAX_SALEBOT_ATTEMPTS}`
+  );
+
+  salebotRequestInFlight = true;
 
   try {
     const response = await fetch(SALEBOT_ENDPOINT, {
@@ -297,20 +394,36 @@ async function notifySalebotAboutOpen(attempt = 0) {
     });
 
     if (!response.ok) {
+      const responseText = await response.text();
       console.error(
         "Failed to notify Salebot about mini app open",
-        await response.text()
+        response.status,
+        responseText
       );
+      updateSalebotStatus(
+        "error",
+        `Salebot вернул статус ${response.status}.`,
+        limitDetail(responseText)
+      );
+
       const fallbackSent = await attemptSalebotNoCors(payloadString);
       if (fallbackSent) {
         salebotNotified = true;
-        salebotRequestInFlight = false;
         console.info("Salebot notified via fallback request.");
+        updateSalebotStatus(
+          "success",
+          "Запрос отправлен через fallback (ответ сервера недоступен).",
+          `Основной статус ${response.status} • ${formatTimestamp()}`
+        );
         return;
       }
 
-      salebotRequestInFlight = false;
-      if (attempt < 5) {
+      if (hasMoreAttempts) {
+        updateSalebotStatus(
+          "retrying",
+          "Повторяем попытку отправки в Salebot…",
+          `Следующая попытка через ${delaySeconds} с (попытка ${attemptNumber + 1} из ${MAX_SALEBOT_ATTEMPTS}).`
+        );
         scheduleSalebotRetry(attempt + 1);
       }
       return;
@@ -318,22 +431,44 @@ async function notifySalebotAboutOpen(attempt = 0) {
 
     salebotNotified = true;
     console.info("Salebot notified about mini app open.");
+    updateSalebotStatus(
+      "success",
+      "Salebot подтвердил получение данных.",
+      `HTTP ${response.status} • ${formatTimestamp()}`
+    );
   } catch (error) {
     console.error("Unable to contact Salebot callback endpoint", error);
+
     const fallbackSent = await attemptSalebotNoCors(payloadString);
-    salebotRequestInFlight = false;
     if (fallbackSent) {
       salebotNotified = true;
       console.info("Salebot notified via fallback request.");
+      updateSalebotStatus(
+        "success",
+        "Запрос отправлен через fallback (ответ сервера недоступен).",
+        `Ошибка основного запроса: ${limitDetail(describeError(error))} • ${formatTimestamp()}`
+      );
       return;
     }
-    if (attempt < 5) {
-      scheduleSalebotRetry(attempt + 1);
-    }
-    return;
-  }
 
-  salebotRequestInFlight = false;
+    const errorDetail = limitDetail(describeError(error));
+    if (hasMoreAttempts) {
+      updateSalebotStatus(
+        "retrying",
+        "Не удалось связаться с Salebot.",
+        `Ошибка: ${errorDetail}. Повторяем через ${delaySeconds} с (попытка ${attemptNumber + 1} из ${MAX_SALEBOT_ATTEMPTS}).`
+      );
+      scheduleSalebotRetry(attempt + 1);
+    } else {
+      updateSalebotStatus(
+        "error",
+        "Не удалось связаться с Salebot.",
+        `Ошибка: ${errorDetail}. Попробуйте перезапустить мини-апп.`
+      );
+    }
+  } finally {
+    salebotRequestInFlight = false;
+  }
 }
 
 function startQuiz() {
@@ -435,6 +570,32 @@ restartButton.addEventListener("click", () => {
   resultSection.classList.add("hidden");
 });
 
+if (copySalebotPayloadButton) {
+  copySalebotPayloadButton.addEventListener("click", async () => {
+    const payload = salebotPayloadEl?.textContent?.trim();
+    if (!payload || payload === "—") {
+      return;
+    }
+
+    if (!navigator.clipboard?.writeText) {
+      console.warn("Clipboard API unavailable in this context.");
+      return;
+    }
+
+    const originalLabel = copySalebotPayloadButton.textContent;
+    try {
+      await navigator.clipboard.writeText(payload);
+      copySalebotPayloadButton.textContent = "Скопировано!";
+      setTimeout(() => {
+        copySalebotPayloadButton.textContent = originalLabel;
+      }, 1500);
+    } catch (error) {
+      console.error("Unable to copy Salebot payload", error);
+    }
+  });
+}
+
+updateSalebotPayload("");
 configureTelegramUi();
 populateTelegramData();
 sendInitDataToBot();
