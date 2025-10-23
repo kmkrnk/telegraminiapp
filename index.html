@@ -1,45 +1,99 @@
 <!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Telegram Mini App</title>
-    <style>
-        body { font-family: monospace; padding: 20px; background: #f0f0f0; }
-        pre { background: #fff; padding: 10px; border-radius: 5px; overflow-x: auto; }
-    </style>
-</head>
-<body>
-    <h1>Все данные Telegram WebApp</h1>
-    <pre id="data">Загрузка...</pre>
-
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Luna Nova Vibe Quiz</title>
+    <link rel="stylesheet" href="style.css" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script>
-        const tg = window.Telegram.WebApp;
+  </head>
+  <body>
+    <div class="app">
+      <header class="hero">
+        <p class="tag">Luna Nova ✨</p>
+        <h1 id="title">Find Your Luna Nova Vibe</h1>
+        <p class="subtitle">
+          Answer three quickies to discover how closely you align with Luna's cosmic creator energy.
+        </p>
+      </header>
 
-        // Разворачиваем окно
-        tg.expand();
+      <main>
+        <section id="telegram-info" class="card">
+          <h2>Telegram session details</h2>
+          <p id="telegram-description" class="description">
+            Loading Telegram data...
+          </p>
+          <div id="telegram-summary" class="info-grid"></div>
+          <div class="raw-section">
+            <h3>initData</h3>
+            <pre id="init-data-text" class="raw-content"></pre>
+          </div>
+          <div class="raw-section">
+            <h3>initDataUnsafe</h3>
+            <pre id="init-data-unsafe" class="raw-content"></pre>
+          </div>
+          <p id="main-button-hint" class="hint">
+            Use the Telegram Start Quiz button to begin your Luna Nova vibe check.
+          </p>
+          <button id="start-fallback" class="primary hidden" type="button">Start quiz</button>
+        </section>
 
-        // Получаем все данные, которые Telegram передал
-        const allData = {
-            initData: tg.initData,
-            initDataUnsafe: tg.initDataUnsafe,
-            themeParams: tg.themeParams
-        };
+        <section id="diagnostics" class="card">
+          <h2>Интеграции и отладка</h2>
+          <div class="status-list">
+            <div id="salebot-status" class="status-item" data-state="idle">
+              <div class="status-header">
+                <span class="status-indicator" aria-hidden="true"></span>
+                <div class="status-title-wrap">
+                  <p class="status-title">Salebot callback</p>
+                  <p id="salebot-status-message" class="status-text">
+                    Ожидаем запуск мини-аппа…
+                  </p>
+                </div>
+              </div>
+              <p id="salebot-status-details" class="status-meta hidden"></p>
+              <div class="status-log-wrap">
+                <span class="status-label">Последний payload</span>
+                <pre id="salebot-payload" class="status-log">—</pre>
+              </div>
+              <button id="copy-salebot-payload" class="ghost" type="button" disabled>
+                Скопировать payload
+              </button>
+            </div>
+            <div class="status-note">
+              <strong>Как проверить ответ:</strong>
+              <p>
+                Откройте DevTools → вкладка <strong>Network</strong> → фильтр по
+                <code>tg_callback</code>, чтобы увидеть, дошёл ли ответ Salebot.
+                Здесь мы показываем статус отправки и данные последнего запроса.
+              </p>
+            </div>
+          </div>
+        </section>
 
-        // Выводим на страницу
-        document.getElementById("data").textContent = JSON.stringify(allData, null, 2);
+        <section id="quiz" class="card hidden">
+          <p id="question" class="question"></p>
+          <div id="options" class="options"></div>
+          <button id="next-btn" class="primary" disabled>Next question →</button>
+        </section>
 
-        // Лог в консоль
-        console.log("Данные Telegram:", allData);
+        <section id="result" class="card hidden">
+          <h2>Here’s your vibe check 💫</h2>
+          <p id="result-text" class="result-text"></p>
+          <div class="result-actions">
+            <button id="restart-btn" class="secondary">Try again</button>
+            <a
+              id="cta-link"
+              class="cta"
+              href="https://t.me/yourusername"
+              target="_blank"
+              rel="noopener noreferrer"
+            >I want my own mini-app like this</a>
+          </div>
+        </section>
+      </main>
+    </div>
 
-        // Отправляем обратно боту (опционально)
-        tg.onEvent("mainButtonClicked", () => {
-            tg.sendData(JSON.stringify(allData));
-        });
-
-        // Показываем кнопку "Отправить данные обратно боту"
-        tg.MainButton.setText("Отправить данные боту");
-        tg.MainButton.show();
-    </script>
-</body>
+    <script src="script.js" defer></script>
+  </body>
 </html>
