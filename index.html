@@ -1,45 +1,46 @@
 <!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Telegram Mini App</title>
-    <style>
-        body { font-family: monospace; padding: 20px; background: #f0f0f0; }
-        pre { background: #fff; padding: 10px; border-radius: 5px; overflow-x: auto; }
-    </style>
-</head>
-<body>
-    <h1>Все данные Telegram WebApp</h1>
-    <pre id="data">Загрузка...</pre>
-
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Luna Nova Vibe Quiz</title>
+    <link rel="stylesheet" href="style.css" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script>
-        const tg = window.Telegram.WebApp;
+  </head>
+  <body>
+    <div class="app">
+      <header class="hero">
+        <p class="tag">Luna Nova ✨</p>
+        <h1 id="title">Find Your Luna Nova Vibe</h1>
+        <p class="subtitle">
+          Answer three quickies to discover how closely you align with Luna's cosmic creator energy.
+        </p>
+      </header>
 
-        // Разворачиваем окно
-        tg.expand();
+      <main>
+        <section id="quiz" class="card">
+          <p id="question" class="question"></p>
+          <div id="options" class="options"></div>
+          <button id="next-btn" class="primary" disabled>Next question →</button>
+        </section>
 
-        // Получаем все данные, которые Telegram передал
-        const allData = {
-            initData: tg.initData,
-            initDataUnsafe: tg.initDataUnsafe,
-            themeParams: tg.themeParams
-        };
+        <section id="result" class="card hidden">
+          <h2>Here’s your vibe check 💫</h2>
+          <p id="result-text" class="result-text"></p>
+          <div class="result-actions">
+            <button id="restart-btn" class="secondary">Try again</button>
+            <a
+              id="cta-link"
+              class="cta"
+              href="https://t.me/yourusername"
+              target="_blank"
+              rel="noopener noreferrer"
+            >I want my own mini-app like this</a>
+          </div>
+        </section>
+      </main>
+    </div>
 
-        // Выводим на страницу
-        document.getElementById("data").textContent = JSON.stringify(allData, null, 2);
-
-        // Лог в консоль
-        console.log("Данные Telegram:", allData);
-
-        // Отправляем обратно боту (опционально)
-        tg.onEvent("mainButtonClicked", () => {
-            tg.sendData(JSON.stringify(allData));
-        });
-
-        // Показываем кнопку "Отправить данные обратно боту"
-        tg.MainButton.setText("Отправить данные боту");
-        tg.MainButton.show();
-    </script>
-</body>
+    <script src="script.js" defer></script>
+  </body>
 </html>
