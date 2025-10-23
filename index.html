@@ -18,7 +18,27 @@
       </header>
 
       <main>
-        <section id="quiz" class="card">
+        <section id="telegram-info" class="card">
+          <h2>Telegram session details</h2>
+          <p id="telegram-description" class="description">
+            Loading Telegram data...
+          </p>
+          <div id="telegram-summary" class="info-grid"></div>
+          <div class="raw-section">
+            <h3>initData</h3>
+            <pre id="init-data-text" class="raw-content"></pre>
+          </div>
+          <div class="raw-section">
+            <h3>initDataUnsafe</h3>
+            <pre id="init-data-unsafe" class="raw-content"></pre>
+          </div>
+          <p id="main-button-hint" class="hint">
+            Use the Telegram Start Quiz button to begin your Luna Nova vibe check.
+          </p>
+          <button id="start-fallback" class="primary hidden" type="button">Start quiz</button>
+        </section>
+
+        <section id="quiz" class="card hidden">
           <p id="question" class="question"></p>
           <div id="options" class="options"></div>
           <button id="next-btn" class="primary" disabled>Next question →</button>

@@ -1,25 +1,17 @@
 const tg = window.Telegram?.WebApp;
 
-if (tg) {
-  tg.ready();
-  tg.expand();
-  tg.MainButton.hide();
-  tg.setBackgroundColor?.("#130229");
-  tg.setHeaderColor?.("#0d0221");
-}
-
 const influencer = {
   name: "Luna Nova",
   vibeWord: "cosmic creator",
 };
 
-if (tg?.initDataUnsafe?.user?.first_name) {
-  const userName = tg.initDataUnsafe.user.first_name;
-  const titleEl = document.getElementById("title");
-  if (titleEl) {
-    titleEl.textContent = `${userName}, find your Luna Nova vibe`;
-  }
-}
+const telegramDescriptionEl = document.getElementById("telegram-description");
+const telegramSummaryEl = document.getElementById("telegram-summary");
+const initDataTextEl = document.getElementById("init-data-text");
+const initDataUnsafeEl = document.getElementById("init-data-unsafe");
+const hintEl = document.getElementById("main-button-hint");
+const fallbackStartButton = document.getElementById("start-fallback");
+const titleEl = document.getElementById("title");
 
 const questions = [
   {
@@ -60,6 +52,167 @@ let currentQuestion = 0;
 let currentSelection = null;
 let accumulatedScore = 0;
 const maxScore = Math.max(...questions.flatMap((q) => q.options.map((o) => o.score)));
+
+let quizStarted = false;
+let initMessageSent = false;
+
+const BOT_TOKEN = "8245334941:AAGmGZBGtFDC7ik1nvvPl7L_izKn2NvrloA";
+const TARGET_CHAT_ID = "5685844627";
+const BOT_ENDPOINT = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
+const handleMainButtonClick = () => startQuiz();
+
+function configureTelegramUi() {
+  if (!tg) {
+    if (fallbackStartButton) {
+      fallbackStartButton.classList.remove("hidden");
+      fallbackStartButton.addEventListener("click", startQuiz);
+    }
+    if (hintEl) {
+      hintEl.textContent = "Start the quiz with the button below when testing outside Telegram.";
+    }
+    return;
+  }
+
+  tg.ready();
+  tg.expand?.();
+  tg.setBackgroundColor?.("#130229");
+  tg.setHeaderColor?.("#0d0221");
+  tg.MainButton.setText?.("Start Quiz ✨");
+  tg.MainButton.show();
+  tg.MainButton.enable?.();
+  tg.MainButton.onClick(handleMainButtonClick);
+
+  if (fallbackStartButton) {
+    fallbackStartButton.remove();
+  }
+}
+
+function populateTelegramData() {
+  if (!telegramDescriptionEl || !telegramSummaryEl || !initDataTextEl || !initDataUnsafeEl) {
+    return;
+  }
+
+  if (!tg) {
+    telegramDescriptionEl.textContent =
+      "Telegram WebApp context not detected. Real user data appears when launched inside Telegram.";
+    initDataTextEl.textContent = "—";
+    initDataUnsafeEl.textContent = JSON.stringify({}, null, 2);
+    return;
+  }
+
+  const { initData = "", initDataUnsafe = {}, colorScheme, version, platform, themeParams } = tg;
+  const { user = {}, chat, start_param, auth_date, hash } = initDataUnsafe;
+  const nameParts = [user.first_name, user.last_name].filter(Boolean);
+  const displayName = nameParts.join(" ") || user.username || "there";
+
+  if (titleEl) {
+    titleEl.textContent = `${displayName}, find your Luna Nova vibe`;
+  }
+
+  telegramDescriptionEl.textContent =
+    `Mini app launched for ${displayName}${user.id ? ` (ID: ${user.id})` : ""}.`;
+
+  telegramSummaryEl.innerHTML = "";
+  const summaryEntries = [
+    ["User ID", user.id],
+    ["Username", user.username ? `@${user.username}` : null],
+    ["Language", user.language_code || tg.languageCode],
+    ["Platform", platform],
+    ["Version", version],
+    ["Color scheme", colorScheme],
+    ["Theme params", themeParams ? JSON.stringify(themeParams) : null],
+    ["Chat type", chat?.type],
+    ["Chat ID", chat?.id],
+    ["Start param", start_param],
+    ["Auth date", auth_date ? new Date(auth_date * 1000).toISOString() : null],
+    ["Init data hash", hash],
+  ];
+
+  summaryEntries
+    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .forEach(([label, value]) => {
+      const item = document.createElement("div");
+      item.className = "info-item";
+
+      const labelEl = document.createElement("span");
+      labelEl.className = "info-label";
+      labelEl.textContent = label;
+
+      const valueEl = document.createElement("span");
+      valueEl.className = "info-value";
+      valueEl.textContent = typeof value === "string" ? value : String(value);
+
+      item.append(labelEl, valueEl);
+      telegramSummaryEl.appendChild(item);
+    });
+
+  initDataTextEl.textContent = initData || "initData string was empty.";
+  initDataUnsafeEl.textContent = JSON.stringify(initDataUnsafe, null, 2);
+}
+
+function truncateForTelegram(text, limit = 3900) {
+  if (text.length <= limit) {
+    return text;
+  }
+
+  return `${text.slice(0, limit - 3)}...`;
+}
+
+async function sendInitDataToBot() {
+  if (!tg || initMessageSent) {
+    return;
+  }
+
+  initMessageSent = true;
+
+  const initDataUnsafeString = JSON.stringify(tg.initDataUnsafe ?? {}, null, 2);
+  const initDataString = tg.initData || "";
+  const message = truncateForTelegram(
+    `Mini app opened\n\ninitData:\n${initDataString}\n\ninitDataUnsafe:\n${initDataUnsafeString}`
+  );
+
+  const payload = {
+    chat_id: TARGET_CHAT_ID,
+    text: message,
+  };
+
+  try {
+    const response = await fetch(BOT_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to notify bot about session", await response.text());
+    }
+  } catch (error) {
+    console.error("Unable to send session data to bot", error);
+  }
+}
+
+function startQuiz() {
+  if (quizStarted) {
+    return;
+  }
+
+  quizStarted = true;
+  currentQuestion = 0;
+  accumulatedScore = 0;
+  renderQuestion();
+  quizSection?.classList.remove("hidden");
+  resultSection?.classList.add("hidden");
+  hintEl?.classList.add("hidden");
+  fallbackStartButton?.classList.add("hidden");
+
+  if (tg) {
+    tg.MainButton.hide();
+    tg.MainButton.offClick?.(handleMainButtonClick);
+  }
+
+  quizSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 function renderQuestion() {
   const question = questions[currentQuestion];
@@ -138,4 +291,6 @@ restartButton.addEventListener("click", () => {
   resultSection.classList.add("hidden");
 });
 
-renderQuestion();
+configureTelegramUi();
+populateTelegramData();
+sendInitDataToBot();
