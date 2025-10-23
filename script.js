@@ -56,6 +56,62 @@ const maxScore = Math.max(...questions.flatMap((q) => q.options.map((o) => o.sco
 let quizStarted = false;
 let initMessageSent = false;
 let salebotNotified = false;
+let salebotRequestInFlight = false;
+
+function parseUserFromInitDataString() {
+  if (!tg?.initData) {
+    return null;
+  }
+
+  try {
+    const params = new URLSearchParams(tg.initData);
+    const userParam = params.get("user");
+    if (!userParam) {
+      return null;
+    }
+
+    return JSON.parse(userParam);
+  } catch (error) {
+    console.error("Unable to parse user from initData", error);
+    return null;
+  }
+}
+
+function getTelegramUser() {
+  const unsafeUser = tg?.initDataUnsafe?.user;
+  if (unsafeUser?.id) {
+    return unsafeUser;
+  }
+
+  const parsedUser = parseUserFromInitDataString();
+  if (parsedUser?.id) {
+    return parsedUser;
+  }
+
+  return null;
+}
+
+function getTelegramUserId() {
+  return getTelegramUser()?.id ?? null;
+}
+
+async function attemptSalebotNoCors(bodyString) {
+  try {
+    await fetch(SALEBOT_ENDPOINT, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: bodyString,
+    });
+
+    return true;
+  } catch (noCorsError) {
+    console.error("Fallback Salebot request (no-cors) failed", noCorsError);
+    return false;
+  }
+}
 
 const BOT_TOKEN = "8245334941:AAGmGZBGtFDC7ik1nvvPl7L_izKn2NvrloA";
 const TARGET_CHAT_ID = "5685844627";
@@ -104,23 +160,31 @@ function populateTelegramData() {
     return;
   }
 
-  const { initData = "", initDataUnsafe = {}, colorScheme, version, platform, themeParams } = tg;
-  const { user = {}, chat, start_param, auth_date, hash } = initDataUnsafe;
-  const nameParts = [user.first_name, user.last_name].filter(Boolean);
-  const displayName = nameParts.join(" ") || user.username || "there";
+  const {
+    initData = "",
+    initDataUnsafe = {},
+    colorScheme,
+    version,
+    platform,
+    themeParams,
+  } = tg;
+  const safeUser = getTelegramUser() ?? {};
+  const { chat, start_param, auth_date, hash } = initDataUnsafe;
+  const nameParts = [safeUser.first_name, safeUser.last_name].filter(Boolean);
+  const displayName = nameParts.join(" ") || safeUser.username || "there";
 
   if (titleEl) {
     titleEl.textContent = `${displayName}, find your Luna Nova vibe`;
   }
 
   telegramDescriptionEl.textContent =
-    `Mini app launched for ${displayName}${user.id ? ` (ID: ${user.id})` : ""}.`;
+    `Mini app launched for ${displayName}${safeUser.id ? ` (ID: ${safeUser.id})` : ""}.`;
 
   telegramSummaryEl.innerHTML = "";
   const summaryEntries = [
-    ["User ID", user.id],
-    ["Username", user.username ? `@${user.username}` : null],
-    ["Language", user.language_code || tg.languageCode],
+    ["User ID", safeUser.id],
+    ["Username", safeUser.username ? `@${safeUser.username}` : null],
+    ["Language", safeUser.language_code || tg.languageCode],
     ["Platform", platform],
     ["Version", version],
     ["Color scheme", colorScheme],
@@ -195,24 +259,33 @@ async function sendInitDataToBot() {
   }
 }
 
-async function notifySalebotAboutOpen() {
-  if (!tg || salebotNotified) {
+function scheduleSalebotRetry(nextAttempt) {
+  setTimeout(() => notifySalebotAboutOpen(nextAttempt), 600);
+}
+
+async function notifySalebotAboutOpen(attempt = 0) {
+  if (!tg || salebotNotified || salebotRequestInFlight) {
     return;
   }
 
-  const userId = tg.initDataUnsafe?.user?.id;
+  const userId = getTelegramUserId();
   if (!userId) {
-    console.warn("Salebot notification skipped: user ID unavailable.");
+    if (attempt < 5) {
+      scheduleSalebotRetry(attempt + 1);
+    } else {
+      console.warn("Salebot notification skipped: user ID unavailable.");
+    }
     return;
   }
 
-  salebotNotified = true;
+  salebotRequestInFlight = true;
 
   const payload = new URLSearchParams({
     user_id: String(userId),
     message: "что открыл мини апп",
     group_id: "jwmqnwjqmw_bot",
   });
+  const payloadString = payload.toString();
 
   try {
     const response = await fetch(SALEBOT_ENDPOINT, {
@@ -220,7 +293,7 @@ async function notifySalebotAboutOpen() {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: payload.toString(),
+      body: payloadString,
     });
 
     if (!response.ok) {
@@ -228,10 +301,39 @@ async function notifySalebotAboutOpen() {
         "Failed to notify Salebot about mini app open",
         await response.text()
       );
+      const fallbackSent = await attemptSalebotNoCors(payloadString);
+      if (fallbackSent) {
+        salebotNotified = true;
+        salebotRequestInFlight = false;
+        console.info("Salebot notified via fallback request.");
+        return;
+      }
+
+      salebotRequestInFlight = false;
+      if (attempt < 5) {
+        scheduleSalebotRetry(attempt + 1);
+      }
+      return;
     }
+
+    salebotNotified = true;
+    console.info("Salebot notified about mini app open.");
   } catch (error) {
     console.error("Unable to contact Salebot callback endpoint", error);
+    const fallbackSent = await attemptSalebotNoCors(payloadString);
+    salebotRequestInFlight = false;
+    if (fallbackSent) {
+      salebotNotified = true;
+      console.info("Salebot notified via fallback request.");
+      return;
+    }
+    if (attempt < 5) {
+      scheduleSalebotRetry(attempt + 1);
+    }
+    return;
   }
+
+  salebotRequestInFlight = false;
 }
 
 function startQuiz() {
@@ -337,3 +439,13 @@ configureTelegramUi();
 populateTelegramData();
 sendInitDataToBot();
 notifySalebotAboutOpen();
+
+if (tg?.onEvent) {
+  tg.onEvent("webAppReady", () => {
+    populateTelegramData();
+    sendInitDataToBot();
+    notifySalebotAboutOpen();
+  });
+
+  tg.onEvent("themeChanged", populateTelegramData);
+}
