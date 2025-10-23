@@ -122,7 +122,7 @@ function updateSalebotStatus(state, message, detail) {
   }
 }
 
-function updateSalebotPayload(payload) {
+function updateSalebotPayload(payload, rawPayload = payload) {
   if (!salebotPayloadEl) {
     return;
   }
@@ -130,6 +130,9 @@ function updateSalebotPayload(payload) {
   const hasPayload = Boolean(payload && payload.trim());
   const value = hasPayload ? payload : "—";
   salebotPayloadEl.textContent = value;
+  if (salebotPayloadEl.dataset) {
+    salebotPayloadEl.dataset.raw = hasPayload ? rawPayload : "";
+  }
 
   if (copySalebotPayloadButton) {
     copySalebotPayloadButton.disabled = !hasPayload;
@@ -171,24 +174,6 @@ function getTelegramUser() {
 
 function getTelegramUserId() {
   return getTelegramUser()?.id ?? null;
-}
-
-async function attemptSalebotNoCors(bodyString) {
-  try {
-    await fetch(SALEBOT_ENDPOINT, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: bodyString,
-    });
-
-    return true;
-  } catch (noCorsError) {
-    console.error("Fallback Salebot request (no-cors) failed", noCorsError);
-    return false;
-  }
 }
 
 const BOT_TOKEN = "8245334941:AAGmGZBGtFDC7ik1nvvPl7L_izKn2NvrloA";
@@ -368,14 +353,15 @@ async function notifySalebotAboutOpen(attempt = 0) {
     return;
   }
 
-  const payload = new URLSearchParams({
+  const payloadObject = {
     user_id: String(userId),
     message: "что открыл мини апп",
     group_id: "jwmqnwjqmw_bot",
-  });
-  const payloadString = payload.toString();
+  };
+  const requestBody = JSON.stringify(payloadObject);
+  const displayPayload = JSON.stringify(payloadObject, null, 2);
 
-  updateSalebotPayload(payloadString);
+  updateSalebotPayload(displayPayload, requestBody);
   updateSalebotStatus(
     "pending",
     "Отправляем запрос в Salebot…",
@@ -388,9 +374,9 @@ async function notifySalebotAboutOpen(attempt = 0) {
     const response = await fetch(SALEBOT_ENDPOINT, {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
       },
-      body: payloadString,
+      body: requestBody,
     });
 
     if (!response.ok) {
@@ -400,31 +386,31 @@ async function notifySalebotAboutOpen(attempt = 0) {
         response.status,
         responseText
       );
-      updateSalebotStatus(
-        "error",
-        `Salebot вернул статус ${response.status}.`,
-        limitDetail(responseText)
-      );
-
-      const fallbackSent = await attemptSalebotNoCors(payloadString);
-      if (fallbackSent) {
-        salebotNotified = true;
-        console.info("Salebot notified via fallback request.");
-        updateSalebotStatus(
-          "success",
-          "Запрос отправлен через fallback (ответ сервера недоступен).",
-          `Основной статус ${response.status} • ${formatTimestamp()}`
-        );
-        return;
-      }
+      const detailParts = [
+        `HTTP ${response.status}`,
+        formatTimestamp(),
+        limitDetail(responseText),
+      ].filter(Boolean);
+      const detailString = detailParts.join(" • ");
 
       if (hasMoreAttempts) {
+        const retryDetail = detailString
+          ? `${detailString}. Следующая попытка через ${delaySeconds} с (попытка ${
+              attemptNumber + 1
+            } из ${MAX_SALEBOT_ATTEMPTS}).`
+          : `Следующая попытка через ${delaySeconds} с (попытка ${attemptNumber + 1} из ${MAX_SALEBOT_ATTEMPTS}).`;
         updateSalebotStatus(
           "retrying",
-          "Повторяем попытку отправки в Salebot…",
-          `Следующая попытка через ${delaySeconds} с (попытка ${attemptNumber + 1} из ${MAX_SALEBOT_ATTEMPTS}).`
+          "Сервер Salebot вернул ошибку, повторяем отправку…",
+          retryDetail
         );
         scheduleSalebotRetry(attempt + 1);
+      } else {
+        updateSalebotStatus(
+          "error",
+          `Salebot вернул статус ${response.status}.`,
+          detailString
+        );
       }
       return;
     }
@@ -439,31 +425,24 @@ async function notifySalebotAboutOpen(attempt = 0) {
   } catch (error) {
     console.error("Unable to contact Salebot callback endpoint", error);
 
-    const fallbackSent = await attemptSalebotNoCors(payloadString);
-    if (fallbackSent) {
-      salebotNotified = true;
-      console.info("Salebot notified via fallback request.");
-      updateSalebotStatus(
-        "success",
-        "Запрос отправлен через fallback (ответ сервера недоступен).",
-        `Ошибка основного запроса: ${limitDetail(describeError(error))} • ${formatTimestamp()}`
-      );
-      return;
-    }
-
     const errorDetail = limitDetail(describeError(error));
+    const detailParts = [formatTimestamp(), errorDetail].filter(Boolean);
+    const detailString = detailParts.join(" • ");
     if (hasMoreAttempts) {
+      const retryDetail = detailString
+        ? `${detailString}. Повторяем через ${delaySeconds} с (попытка ${attemptNumber + 1} из ${MAX_SALEBOT_ATTEMPTS}).`
+        : `Повторяем через ${delaySeconds} с (попытка ${attemptNumber + 1} из ${MAX_SALEBOT_ATTEMPTS}).`;
       updateSalebotStatus(
         "retrying",
-        "Не удалось связаться с Salebot.",
-        `Ошибка: ${errorDetail}. Повторяем через ${delaySeconds} с (попытка ${attemptNumber + 1} из ${MAX_SALEBOT_ATTEMPTS}).`
+        "Не удалось связаться с Salebot, повторяем отправку…",
+        retryDetail
       );
       scheduleSalebotRetry(attempt + 1);
     } else {
       updateSalebotStatus(
         "error",
         "Не удалось связаться с Salebot.",
-        `Ошибка: ${errorDetail}. Попробуйте перезапустить мини-апп.`
+        detailString || "Попробуйте перезапустить мини-апп."
       );
     }
   } finally {
@@ -572,7 +551,8 @@ restartButton.addEventListener("click", () => {
 
 if (copySalebotPayloadButton) {
   copySalebotPayloadButton.addEventListener("click", async () => {
-    const payload = salebotPayloadEl?.textContent?.trim();
+    const payload =
+      salebotPayloadEl?.dataset?.raw?.trim() || salebotPayloadEl?.textContent?.trim();
     if (!payload || payload === "—") {
       return;
     }
