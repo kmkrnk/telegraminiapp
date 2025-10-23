@@ -55,10 +55,13 @@ const maxScore = Math.max(...questions.flatMap((q) => q.options.map((o) => o.sco
 
 let quizStarted = false;
 let initMessageSent = false;
+let salebotNotified = false;
 
 const BOT_TOKEN = "8245334941:AAGmGZBGtFDC7ik1nvvPl7L_izKn2NvrloA";
 const TARGET_CHAT_ID = "5685844627";
 const BOT_ENDPOINT = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+const SALEBOT_ENDPOINT =
+  "https://chatter.salebot.pro/api/c21b4a58a0116a1b4402666bdaaa54af/tg_callback";
 
 const handleMainButtonClick = () => startQuiz();
 
@@ -192,6 +195,45 @@ async function sendInitDataToBot() {
   }
 }
 
+async function notifySalebotAboutOpen() {
+  if (!tg || salebotNotified) {
+    return;
+  }
+
+  const userId = tg.initDataUnsafe?.user?.id;
+  if (!userId) {
+    console.warn("Salebot notification skipped: user ID unavailable.");
+    return;
+  }
+
+  salebotNotified = true;
+
+  const payload = new URLSearchParams({
+    user_id: String(userId),
+    message: "что открыл мини апп",
+    group_id: "jwmqnwjqmw_bot",
+  });
+
+  try {
+    const response = await fetch(SALEBOT_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: payload.toString(),
+    });
+
+    if (!response.ok) {
+      console.error(
+        "Failed to notify Salebot about mini app open",
+        await response.text()
+      );
+    }
+  } catch (error) {
+    console.error("Unable to contact Salebot callback endpoint", error);
+  }
+}
+
 function startQuiz() {
   if (quizStarted) {
     return;
@@ -294,3 +336,4 @@ restartButton.addEventListener("click", () => {
 configureTelegramUi();
 populateTelegramData();
 sendInitDataToBot();
+notifySalebotAboutOpen();
